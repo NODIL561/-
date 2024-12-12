@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 3D Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+        }
+        canvas {
+            display: block;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 24px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const scoreElement = document.getElementById('score');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let targets = [];
+        const player = { x: canvas.width / 2, y: canvas.height - 100, size: 30, speed: 5 };
+        const keys = { w: false, a: false, s: false, d: false };
+
+        function createTarget() {
+            return {
+                x: Math.random() * (canvas.width - 50) + 25,
+                y: Math.random() * (canvas.height / 2),
+                size: 20 + Math.random() * 30,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                dx: (Math.random() - 0.5) * 2,
+                dy: (Math.random() - 0.5) * 2
+            };
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawTargets() {
+            targets.forEach(target => {
+                ctx.fillStyle = target.color;
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, target.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateTargets() {
+            targets.forEach(target => {
+                target.x += target.dx;
+                target.y += target.dy;
+
+                if (target.x - target.size < 0 || target.x + target.size > canvas.width) {
+                    target.dx *= -1;
+                }
+                if (target.y - target.size < 0 || target.y + target.size > canvas.height) {
+                    target.dy *= -1;
+                }
+            });
+        }
+
+        function movePlayer() {
+            if (keys.w && player.y - player.size > 0) player.y -= player.speed;
+            if (keys.s && player.y + player.size < canvas.height) player.y += player.speed;
+            if (keys.a && player.x - player.size > 0) player.x -= player.speed;
+            if (keys.d && player.x + player.size < canvas.width) player.x += player.speed;
+        }
+
+        function shoot(x, y) {
+            targets = targets.filter(target => {
+                const dist = Math.hypot(x - target.x, y - target.y);
+                if (dist < target.size) {
+                    score++;
+                    scoreElement.textContent = `Score: ${score}`;
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            shoot(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key in keys) keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key in keys) keys[e.key] = false;
+        });
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            movePlayer();
+            updateTargets();
+
+            drawPlayer();
+            drawTargets();
+
+            if (targets.length < 5) {
+                targets.push(createTarget());
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
